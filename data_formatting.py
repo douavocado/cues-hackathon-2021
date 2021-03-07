@@ -8,14 +8,14 @@ Created on Sat Mar  6 11:44:41 2021
 import pandas as pd
 import numpy as np
 
-target = 'tower_height'
+target = 'nac_weight'
 
-db = pd.read_excel('edited3.xlsx')
+db = pd.read_csv('gen_data/nacelle_train.csv')
 
-db = db.rename(columns={'Type':'type','Region':'region','Turbine rating (kW)': 'turbine_rating','Metocean': 'metocean','Blade length (m)':'blade_length','Operator': 'operator',"Water depth ": "water_depth",'Project Ref No.':'project_ref', "Tower height (m)": "tower_height", "Single Blade Weight (te)": "single_blade_weight", 'Built duration': 'built_duration', 'Nacelle Weights': 'nacelle_weights'})
+db = db.rename(columns={'Type':'type','Region':'region','Turbine rating (kW)': 'turbine_rating','Metocean': 'metocean','Blade length (m)':'blade_length','Operator': 'operator',"water_depth2": "water_depth",'Project Ref No.':'project_ref', "Tower height (m)": "tower_height", "Single Blade Weight (te)": "single_blade_weight", 'Built duration': 'built_duration', 'Nacelle Weights': 'nacelle_weights'})
 #print(dir(db))
 cols = list(db.columns)
-db[cols] = db[cols].replace({'0':np.nan, 0:np.nan})
+# db[cols] = db[cols].replace({'0':np.nan, 0:np.nan})
 db['water_depth'] =  db['water_depth'].replace({'Deep':3, 'Mid':2, 'Shallow':1})
 # artbitrary constant
 db['constant'] = np.ones((len(db),1))
@@ -25,10 +25,10 @@ db['metocean'] =  db['metocean'].replace({'Moderate':1, 'Harsh':1.5})
 # db = db.drop(['tower_height', 'single_blade_weight', 'project_ref','built_duration', 'nacelle_weights'],axis=1)
 
 
-db['squared_power'] = (db['turbine_rating']/1000)**2
+db['squared_power'] = (db['turbine_rating'])**(2)
+db['squared_a1'] = (db['a1'])**(2)
 
-
-dropped_db = db[(db.operator == 'Competitor')] #& (db.type == 'gamma')]
+dropped_db = db
 # mock_db = dropped_db.drop(['blade_length'], axis=1)
 
 # Alpha
@@ -38,11 +38,11 @@ dropped_db = db[(db.operator == 'Competitor')] #& (db.type == 'gamma')]
 # independent_var = ['a1', 'turbine_rating', 'constant']
 # mock_db = mock_db.drop(['squared_power', 'water_depth', 'metocean'], axis=1)
 # gammma
-independent_var = ['blade_length', 'constant']
+independent_var = ['a1','built_duration', 'water_depth', 'turbine_rating', 'metocean', 'blade_length', 'constant']
 # mock_db = mock_db.drop(['squared_power', 'water_depth', 'metocean'], axis=1)
 focussed_db = dropped_db[independent_var + [target]]
 
-focussed_db = focussed_db.dropna()
+focussed_db = focussed_db.dropna().sample(frac=1)
 without_target = focussed_db[independent_var]
 
 # focussed_db = mock_db.drop(['operator', 'type', 'region'], axis=1)
@@ -67,15 +67,17 @@ print('Variance estimator for noise:', variance_estimator)
 
 # inference
 # find nan columns for blade length
-empty_db = db[db[target].isna()]
-# empty_db = empty_db[(empty_db['type'] == 'gamma') & (empty_db['operator'] == 'Competitor')]
-empty_db = empty_db[(empty_db['operator'] == 'Competitor')]
-relevant = empty_db[independent_var]
-relevant = relevant.dropna()
-print(relevant)
-test_x = relevant.to_numpy()
-predicted_values = np.matmul(test_x, weight_estimates)
-relevant[target] = predicted_values
+# empty_db = db[db[target].isna()]
+# # empty_db = empty_db[(empty_db['type'] == 'gamma') & (empty_db['operator'] == 'Competitor')]
 
-db.update(relevant)
-db.to_excel("edited3.xlsx")  
+# relevant = empty_db[independent_var]
+# relevant = relevant.dropna()
+# print(relevant)
+# test_x = relevant.to_numpy()
+# predicted_values = np.matmul(test_x, weight_estimates)
+# relevant[target] = predicted_values
+
+# db.update(relevant)
+# db.to_excel("edited3.xlsx")  
+
+test_db = pd.read_csv('gen_data/nacelle_test.csv')
